@@ -1,0 +1,55 @@
+name: item2-ci-testing
+
+on:
+  push:
+    paths:
+      - "item2-ci-testing/**"
+      - ".github/workflows/item2-ci-testing.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: item2-ci-testing
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run unit tests
+        run: python -m pytest tests/unit -v
+
+  integration-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run integration tests
+        run: python -m pytest tests/integration -v
+
+  build-and-deploy:
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t item2-app .
+      - name: Deploy container
+        run: docker run -d -p 5000:5000 --name item2-app item2-app
+      - name: Smoke test the deployment
+        run: |
+          sleep 5
+          curl -f http://localhost:5000/health
+          curl -f "http://localhost:5000/add?a=2&b=3"
+      - name: Deployment complete
+        run: echo "All test gates passed - application deployed"
