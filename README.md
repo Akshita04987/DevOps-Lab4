@@ -2,20 +2,51 @@
 
 Kubernetes (Minikube) experiments on advanced deployment strategies and secure delivery. Each experiment has its own folder with its manifests and commands.
 
+**Author:** Akshita Sharma ([@Akshita04987](https://github.com/Akshita04987))
+**Course:** DevOps and Automation Lab (ENSP461), Lab 4
 
 ## Experiments
 | Item | Experiment | Folder | Status |
 |---|---|---|---|
-| 1 | Disaster recovery (backup, restore, failover) | `item1-disaster-recovery/` | Planned |
+| 1 | Disaster recovery (backup, restore, failover) | `item1-disaster-recovery/` | Completed |
 | 2 | Automated testing in the CI/CD pipeline | `item2-ci-testing/` | Planned |
 | 3 | Blue-Green deployment | `item3-blue-green/` | Completed |
 | 4 | GitOps-based delivery | `item4-gitops/` | Planned |
 | 6 | Secret management | `item6-secret-management/` | Completed |
 | 7 | Canary deployment | `item7-canary/` | Completed |
 
+(Item 5 is the written report, which is submitted on the course portal.)
 
 ## Prerequisites
 Docker Desktop, Minikube and kubectl. Start the cluster with `minikube start`.
+
+## Item 1: Disaster recovery
+A stateful app (Deployment with a PersistentVolumeClaim) stores orders in `/data/records.txt`. The experiment demonstrates backup, restore after a total loss, and failover.
+
+```bash
+kubectl apply -f item1-disaster-recovery/dr-app.yaml
+
+# Backup: manifests and data
+kubectl get deployment/dr-app pvc/dr-data -o yaml > backup/manifests-backup.yaml
+kubectl cp "<pod>:/data/records.txt" backup/records.txt
+
+# Disaster: delete the app and its volume
+kubectl delete -f item1-disaster-recovery/dr-app.yaml
+
+# Restore: re-create the app, then put the backed-up data back
+kubectl apply -f item1-disaster-recovery/dr-app.yaml
+kubectl cp backup/records.txt "<pod>:/data/records.txt"
+
+# Failover: delete the pod, the Deployment starts a new one with the same data
+kubectl delete pod <pod>
+```
+
+| Objective | Target | Result |
+|---|---|---|
+| RPO (data loss) | Time since last backup | 0 orders lost (backup taken after the last write) |
+| RTO (time to recover) | Under 2 minutes | Restore 46 seconds, failover under 30 seconds |
+
+Recommendations for production: automated and off-site backups (CronJob or Velero), encrypted backups, regular restore tests and multi-node high availability.
 
 ## Item 3: Blue-Green deployment
 Two identical deployments run side by side: **blue** (version 1.0) and **green** (version 2.0). One Service decides which version receives the traffic through its selector.
