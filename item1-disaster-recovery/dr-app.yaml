@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dr-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dr-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dr-app
+  template:
+    metadata:
+      labels:
+        app: dr-app
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: app
+        image: busybox:1.36
+        command: ["sh", "-c", "if [ ! -f /data/records.txt ]; then echo 'Order 1001: paid' > /data/records.txt; echo 'Order 1002: shipped' >> /data/records.txt; fi; sleep 3600"]
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: dr-data
