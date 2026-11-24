@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: gitops-app
 spec:
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       app: gitops-app
@@ -16,6 +16,6 @@ spec:
       - name: web
         image: hashicorp/http-echo:0.2.3
         args:
-        - "-text=GitOps version 1.0"
+        - "-text=GitOps version 2.0"
         ports:
         - containerPort: 5678
